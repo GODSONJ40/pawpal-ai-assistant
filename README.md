@@ -74,21 +74,26 @@ Sample test output:
 
 > Fill in once you've implemented scheduling logic.
 
+
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `sort_tasks()` | Sorts by priority (high → medium → low), then duration |
+| Filtering | `build_schedule()` | Stops adding tasks when time runs out |
+| Conflict handling | `detect_conflicts()` | Checks if total task time exceeds available time |
+| Recurring tasks | `Task.recurring` | Flag included for future expansion |
+
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+1. Open the PawPal+ Streamlit app using `py -m streamlit run app.py`
+2. Enter owner name, pet name, and species
+3. Set available daily time in minutes
+4. Add multiple pet care tasks with priority and duration
+5. Click “Generate Schedule”
+6. View optimized daily plan
+7. Review skipped tasks and explanation of scheduling logic
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+**Screenshot or video** *(optional)*: <!-- ![alt text](image.png) -->
+![alt text](image-1.png)
