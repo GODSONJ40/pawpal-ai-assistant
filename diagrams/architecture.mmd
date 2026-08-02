@@ -1,0 +1,25 @@
+%% PawPal+ — Final Applied AI System Architecture
+%% This is a STARTER SKELETON. Replace the placeholder labels with your real
+%% components before submission. Requirement: show (1) main components,
+%% (2) data flow input -> process -> output, and (3) where humans/testing
+%% check the AI's results. Preview at https://mermaid.live and keep this
+%% .mmd source file in the repo (a PNG alone is not sufficient).
+
+flowchart TD
+    User([User / Pet Owner]) -->|input: routines, questions| App[Streamlit UI - app.py]
+    App --> Core[PawPal Core Logic - pawpal_system.py]
+
+    subgraph AI[AI Feature - choose/rename to match yours]
+        Core --> Feature[e.g. RAG retriever / agentic planner]
+        Feature --> Guard[Guardrails & error handling]
+    end
+
+    Guard --> Output[Prioritized tasks / AI response]
+    Output --> App
+    App -->|shown to| User
+
+    %% Reliability & human-in-the-loop
+    Feature -.logs.-> Log[(logs/ + ai_interactions.md)]
+    Output -.checked by.-> Tests[pytest suite / eval script]
+    Output -.reviewed by.-> Human{{Human evaluation}}
+    Tests -.results.-> Log
