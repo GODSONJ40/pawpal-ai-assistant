@@ -68,7 +68,27 @@ if st.button("Add Task"):
 
 if st.session_state.tasks:
     st.subheader("Current Tasks")
-    st.table(st.session_state.tasks)
+
+    header = st.columns([3, 2, 2, 2, 1])
+    header[0].markdown("**Task**")
+    header[1].markdown("**Duration**")
+    header[2].markdown("**Priority**")
+    header[3].markdown("**Recurring**")
+    header[4].markdown("**Remove**")
+
+    for i, item in enumerate(st.session_state.tasks):
+        row = st.columns([3, 2, 2, 2, 1])
+        row[0].write(item["title"])
+        row[1].write(f"{item['duration']} min")
+        row[2].write(item["priority"].title())
+        row[3].write("Yes" if item.get("recurring") else "No")
+        if row[4].button("🗑️", key=f"del_{i}", help=f"Remove '{item['title']}'"):
+            st.session_state.tasks.pop(i)
+            st.rerun()
+
+    if st.button("Clear All Tasks"):
+        st.session_state.tasks = []
+        st.rerun()
 else:
     st.info("No tasks added yet.")
 
