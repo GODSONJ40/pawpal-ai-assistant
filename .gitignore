@@ -3,3 +3,6 @@ __pycache__/
 .venv_new/
 .pytest_cache/
 .DS_Store
+
+# Runtime logs (keep the folder, ignore generated .log files)
+logs/*.log
