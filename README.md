@@ -229,10 +229,10 @@ To see the full agentic system end-to-end in the Streamlit UI:
 
 **Screenshots:**
 
-*Result view — the over-booked scenario: confidence crashes to 0.17, a health
-risk flag fires for the skipped Vet Appointment, and the plan is explained.*
+*Full app view — a comfortable day where all four tasks fit: the planner
+schedules everything within the 90-minute budget and reports confidence 1.00.*
 
-![PawPal+ result view with confidence score and health risk flag](assets/image-1.png)
+![PawPal+ full app view with all tasks scheduled and confidence 1.00](assets/image-1.png)
 
 *Input view — owner/pet details and the task builder.*
 
