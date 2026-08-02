@@ -42,17 +42,89 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
-## 🖥️ Sample Output
+## 🖥️ Reproducible Execution Evidence
 
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
+The CLI demo (`demo.py`) runs the agentic Care Planner on three scenarios and
+prints inputs, outputs, confidence scores, health-risk flags, and guardrail
+behavior — so the system can be graded without watching a video.
+
+**Command (offline, no API key required — fully reproducible):**
+
+```bash
+python demo.py --no-llm
+```
+
+With `ANTHROPIC_API_KEY` set, `python demo.py` runs the **live Claude agent**
+(plan → act → check → revise → submit); with no key it uses the deterministic
+fallback shown below. Both paths produce the same result shape.
+
+**Output:**
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+======================================================================
+PawPal+ Care Planner - DETERMINISTIC FALLBACK (no API key / --no-llm)
+======================================================================
+
+>>> Scenario 1. Comfortable day (everything fits)
+    Available time: 120 min
+    Tasks: ['Morning Walk', 'Give Medication', 'Feed Breakfast', 'Play Fetch', 'Brush Coat']
+    Engine        : deterministic fallback
+    Agent turns   : 0
+    Scheduled     : Give Medication, Feed Breakfast, Morning Walk, Play Fetch, Brush Coat
+    Skipped       : (none)
+    Time used     : 80/120 min
+    Confidence    : 1.0
+        - Priority-weighted coverage: 12/12 = 1.00
+        - All tasks scheduled with no conflicts.
+    Explanation   : Baseline plan (no AI): scheduled 5 of 5 tasks by priority then duration, using 80/120 minutes.
+
+>>> Scenario 2. Tight budget (agent must triage)
+    Available time: 35 min
+    Tasks: ['Give Medication', 'Morning Walk', 'Play Fetch', 'Brush Coat']
+    Engine        : deterministic fallback
+    Agent turns   : 0
+    Scheduled     : Give Medication, Morning Walk
+    Skipped       : Play Fetch, Brush Coat
+    Time used     : 35/35 min
+    Confidence    : 0.6
+        - Priority-weighted coverage: 6/9 = 0.67
+        - Not every task fit in the available time (time conflict).
+    RISK FLAGS    :
+        ! Available time is too short for all tasks.
+    Explanation   : Baseline plan (no AI): scheduled 2 of 4 tasks by priority then duration, using 35/35 minutes.
+
+>>> Scenario 3. Over-booked (health task at risk)
+    Available time: 20 min
+    Tasks: ['Long Training Session', 'Vet Appointment', 'Feed Dinner']
+    Engine        : deterministic fallback
+    Agent turns   : 0
+    Scheduled     : Feed Dinner
+    Skipped       : Vet Appointment, Long Training Session
+    Time used     : 10/20 min
+    Confidence    : 0.17
+        - Priority-weighted coverage: 3/8 = 0.38
+        - Health-critical task(s) skipped: Vet Appointment
+        - Not every task fit in the available time (time conflict).
+    RISK FLAGS    :
+        ! Health-critical task skipped: 'Vet Appointment'
+        ! Available time is too short for all tasks.
+    Explanation   : Baseline plan (no AI): scheduled 1 of 3 tasks by priority then duration, using 10/20 minutes.
+
+>>> Guardrail check: empty task list
+    Rejected as expected: At least one task is required to build a plan.
+
+>>> Guardrail check: negative duration
+    Rejected as expected: Task 'Walk' needs a positive integer duration_minutes.
 ```
+
+**What this evidence demonstrates:**
+
+| Requirement | Where to see it |
+|---|---|
+| End-to-end run (3 inputs) | Scenarios 1–3, each with input tasks → scheduled/skipped output |
+| AI feature behavior | Agentic engine line + `Agent turns`; scenario 2 triages by priority, scenario 3 preserves feeding over a low-value task |
+| Reliability / confidence scoring | `Confidence` (1.0 → 0.6 → 0.17) with priority-weighted reasons |
+| Guardrails | Health-critical **RISK FLAGS**, plus rejected empty/negative-duration inputs before any AI call |
 
 ## 🧪 Testing PawPal+
 
@@ -67,8 +139,21 @@ pytest --cov
 Sample test output:
 
 ```
-# Paste your pytest output here
+============================= test session starts =============================
+platform win32 -- Python 3.13.2, pytest-9.1.1, pluggy-1.6.0
+collected 25 items
+
+tests/test_agent.py ...............                                      [ 60%]
+tests/test_scheduler.py ..........                                       [100%]
+
+============================= 25 passed in 0.11s ==============================
 ```
+
+**Testing summary:** 25 of 25 tests pass. The agent suite covers input
+guardrails, scheduler grounding, confidence scoring, health-critical detection,
+the offline deterministic fallback, and the agent loop (act → submit) plus the
+refusal fallback — all mocked so they run with no API key. The scheduler suite
+covers sorting, time-budget filtering, and conflict detection.
 
 ## 📐 Smarter Scheduling
 
