@@ -51,6 +51,23 @@ The full system diagram (required Mermaid source) lives at
 <https://mermaid.live>. Responsible-AI reflection is in
 [`model_card.md`](model_card.md).
 
+## Design decisions
+
+- **The LLM reasons; verified code decides.** The agent never invents a schedule
+  — it calls the deterministic `Scheduler` as a tool and the final answer is
+  re-grounded in it. This trades some model freedom for trust and reproducibility.
+- **Fails safe, not loud.** Bad input is rejected before any AI call, and with no
+  API key the app runs a deterministic fallback instead of erroring — so it works
+  and is gradeable offline.
+- **Confidence over false certainty.** Every plan carries a 0–1 score and explicit
+  health-risk flags rather than presenting one unqualified answer.
+- **Native theming, scoped CSS.** The UI theme is configured natively via
+  [`.streamlit/config.toml`](.streamlit/config.toml) (colors, fonts, light/dark),
+  which is cleaner and upgrade-safe. The one deliberate exception is the live
+  accent-color picker: it applies a small, tightly-scoped CSS override (primary
+  buttons and links only) because runtime color switching isn't possible through
+  config alone.
+
 ## Getting started
 
 ### Setup
@@ -230,7 +247,7 @@ To see the full agentic system end-to-end in the Streamlit UI:
 **Screenshots:**
 
 *Full app view — a comfortable day where all four tasks fit: the planner
-schedules everything within the 90-minute budget and reports confidence 1.00.*
+schedules everything within the available time and reports confidence 1.00.*
 
 ![PawPal+ full app view with all tasks scheduled and confidence 1.00](assets/image-1.png)
 
