@@ -1,25 +1,70 @@
 %% PawPal+ — Final Applied AI System Architecture
-%% This is a STARTER SKELETON. Replace the placeholder labels with your real
-%% components before submission. Requirement: show (1) main components,
-%% (2) data flow input -> process -> output, and (3) where humans/testing
-%% check the AI's results. Preview at https://mermaid.live and keep this
-%% .mmd source file in the repo (a PNG alone is not sufficient).
+%% AI feature: an AGENTIC WORKFLOW (plan -> act -> check -> revise -> submit)
+%% that wraps the deterministic Scheduler from the Module 1-3 prototype.
+%% Preview at https://mermaid.live. This .mmd source is the required artifact
+%% (a PNG alone is not sufficient).
+%%
+%% The diagram shows the three graded elements:
+%%   (1) main components,
+%%   (2) data flow  input -> process -> output,
+%%   (3) where testing / humans check the AI's results (dashed lines).
 
 flowchart TD
-    User([User / Pet Owner]) -->|input: routines, questions| App[Streamlit UI - app.py]
-    App --> Core[PawPal Core Logic - pawpal_system.py]
+    %% ---------------- Input ----------------
+    User([Pet Owner])
 
-    subgraph AI[AI Feature - choose/rename to match yours]
-        Core --> Feature[e.g. RAG retriever / agentic planner]
-        Feature --> Guard[Guardrails & error handling]
+    subgraph EntryPoints["Entry points"]
+        direction LR
+        UI["Streamlit UI<br/>app.py"]
+        CLI["CLI demo<br/>demo.py"]
     end
 
-    Guard --> Output[Prioritized tasks / AI response]
-    Output --> App
-    App -->|shown to| User
+    User -->|"available time + tasks<br/>(title, duration, priority)"| UI
+    User -->|"available time + tasks"| CLI
 
-    %% Reliability & human-in-the-loop
-    Feature -.logs.-> Log[(logs/ + ai_interactions.md)]
-    Output -.checked by.-> Tests[pytest suite / eval script]
-    Output -.reviewed by.-> Human{{Human evaluation}}
-    Tests -.results.-> Log
+    %% ---------------- Orchestration ----------------
+    API["plan_care()<br/>public entry point<br/>pawpal_agent.py"]
+    UI --> API
+    CLI --> API
+
+    API --> Guard1{{"Guardrail: validate_inputs()<br/>reject bad time / duration / priority"}}
+    Guard1 -->|invalid| Reject["ValueError returned to user"]
+    Guard1 -->|valid| KeyCheck{"ANTHROPIC_API_KEY set?"}
+
+    KeyCheck -->|no| Fallback["deterministic_plan()<br/>safe baseline, no AI"]
+    KeyCheck -->|yes| Agent
+
+    %% ---------------- Agentic loop ----------------
+    subgraph Agent["CarePlannerAgent.plan()  —  agentic loop (max 6 turns)"]
+        direction TB
+        LLM["Claude API<br/>messages.create()<br/>system prompt + tools"]
+        LLM -->|"tool_use: build_care_schedule"| ToolAct["run_scheduler()<br/>grounds the agent in real logic"]
+        ToolAct -->|"scheduled / skipped / conflicts"| Check{"CHECK:<br/>health task skipped?<br/>time conflict?"}
+        Check -->|"revise & retry"| LLM
+        Check -->|"tool_use: submit_care_plan"| Submit["final ordered plan"]
+        LLM -.->|"stop_reason = refusal"| RefusalFB["refusal -> deterministic fallback"]
+    end
+
+    %% Deterministic source of truth (Module 1-3 core)
+    ToolAct --> Core["Scheduler.build_schedule()<br/>pawpal_system.py<br/>(sort by priority+duration,<br/>detect_conflicts)"]
+    Core --> ToolAct
+
+    %% ---------------- Scoring / output assembly ----------------
+    Submit --> Ground["Re-ground final answer in<br/>run_scheduler() = source of truth"]
+    RefusalFB --> Result
+    Fallback --> Result
+    Ground --> Score["compute_confidence() 0.0-1.0<br/>+ _risk_flags()"]
+    Score --> Result["CarePlanResult<br/>scheduled, skipped, explanation,<br/>confidence, health_risk_flags"]
+
+    %% ---------------- Output ----------------
+    Result -->|rendered| UI
+    Result -->|printed| CLI
+
+    %% ---------------- Reliability / human-in-the-loop ----------------
+    Agent -.reasoning trace.-> Trace[("ai_interactions.md")]
+    API -.events.-> Log[("logs/pawpal_agent.log")]
+    Result -.asserted by.-> Tests["pytest:<br/>tests/test_agent.py<br/>tests/test_scheduler.py"]
+    Result -.reviewed by.-> Human{{"Human evaluation<br/>README + model_card.md"}}
+
+    classDef store fill:#f5f5f5,stroke:#999,color:#333;
+    class Trace,Log store;

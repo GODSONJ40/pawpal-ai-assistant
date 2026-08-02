@@ -38,3 +38,25 @@
 **Which approach did you use in your final implementation and why?**
 
 <!-- Your conclusion -->
+
+### Care plan (agentic) (2026-08-02 01:08:43Z)
+
+- **reasoning**: {"step": "reasoning", "iteration": 1, "text": "Let me test the schedule."}
+- **build_care_schedule**: {"step": "build_care_schedule", "iteration": 1, "result": {"scheduled": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "skipped": [], "time_used": 70, "available_time": 120, "conflicts": false}}
+- **submit**: {"step": "submit", "iteration": 2, "input": {"ordered_tasks": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "explanation": "All tasks fit; medication first for safety.", "health_risk_flags": []}}
+
+### Care plan (refusal fallback) (2026-08-02 01:08:43Z)
+
+- **refusal**: {"step": "refusal", "iteration": 1}
+- **deterministic_fallback**: {"step": "deterministic_fallback", "result": {"scheduled": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "skipped": [], "time_used": 70, "available_time": 120, "conflicts": false}}
+
+### Care plan (agentic) (2026-08-02 01:47:55Z)
+
+- **reasoning**: {"step": "reasoning", "iteration": 1, "text": "Let me test the schedule."}
+- **build_care_schedule**: {"step": "build_care_schedule", "iteration": 1, "result": {"scheduled": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "skipped": [], "time_used": 70, "available_time": 120, "conflicts": false}}
+- **submit**: {"step": "submit", "iteration": 2, "input": {"ordered_tasks": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "explanation": "All tasks fit; medication first for safety.", "health_risk_flags": []}}
+
+### Care plan (refusal fallback) (2026-08-02 01:47:55Z)
+
+- **refusal**: {"step": "refusal", "iteration": 1}
+- **deterministic_fallback**: {"step": "deterministic_fallback", "result": {"scheduled": ["Give Medication", "Morning Walk", "Play Fetch", "Brush Coat"], "skipped": [], "time_used": 70, "available_time": 120, "conflicts": false}}
