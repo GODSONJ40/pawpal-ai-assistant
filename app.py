@@ -4,118 +4,198 @@ import streamlit as st
 
 from pawpal_agent import plan_care
 
-st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
-
-st.title("🐾 PawPal+")
-st.write("Plan your pet's daily care schedule based on priorities and available time.")
-
-# -------------------------
-# Owner & Pet Information
-# -------------------------
-st.header("Owner & Pet Information")
-
-owner_name = st.text_input("Owner Name", value="Jordan")
-pet_name = st.text_input("Pet Name", value="Mochi")
-species = st.selectbox("Species", ["Dog", "Cat", "Other"])
-available_time = st.number_input(
-    "Available Time (minutes)",
-    min_value=15,
-    max_value=480,
-    value=90,
+st.set_page_config(
+    page_title="PawPal+ — Pet care planner",
+    page_icon=":material/pets:",
+    layout="wide",
 )
 
-st.divider()
+# Priority label -> inline badge color.
+PRIORITY_BADGE = {"high": "red", "medium": "orange", "low": "gray"}
 
-# -------------------------
-# Task Input
-# -------------------------
-st.header("Add Pet Care Tasks")
+# Accent color (matches the config.toml coral by default). The picker recolors
+# the primary accent live; presets and a reset control drive it via session_state.
+DEFAULT_ACCENT = "#E2542A"
+ACCENT_PRESETS = {
+    "Coral": "#E2542A",
+    "Amber": "#F59E0B",
+    "Rose": "#E11D48",
+    "Violet": "#8B5CF6",
+    "Indigo": "#6366F1",
+    "Emerald": "#10B981",
+    "Sky": "#0EA5E9",
+}
+
+
+def _apply_accent_preset():
+    choice = st.session_state.get("accent_preset")
+    if choice in ACCENT_PRESETS:
+        st.session_state["accent_color"] = ACCENT_PRESETS[choice]
+
+
+def _reset_accent():
+    st.session_state["accent_color"] = DEFAULT_ACCENT
+    st.session_state["accent_preset"] = "Coral"
+
 
 if "tasks" not in st.session_state:
     st.session_state.tasks = []
+st.session_state.setdefault("accent_color", DEFAULT_ACCENT)
+st.session_state.setdefault("accent_preset", "Coral")
 
-col1, col2, col3 = st.columns(3)
+# ---------------------------------------------------------------------------
+# Sidebar — owner/pet context and planner engine status
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.header(":material/pets: PawPal+")
+    st.caption("Smart daily care planning for your pet.")
 
-with col1:
-    task_title = st.text_input("Task Title", value="Morning Walk")
-
-with col2:
-    duration = st.number_input(
-        "Duration (minutes)",
-        min_value=1,
-        max_value=240,
-        value=20,
+    st.subheader("Owner & pet")
+    owner_name = st.text_input("Owner name", value="Jordan")
+    pet_name = st.text_input("Pet name", value="Mochi")
+    species = st.selectbox("Species", ["Dog", "Cat", "Other"])
+    available_time = st.number_input(
+        "Available time (minutes)",
+        min_value=15,
+        max_value=480,
+        value=90,
+        step=5,
     )
 
-with col3:
-    priority = st.selectbox(
-        "Priority",
-        ["high", "medium", "low"],
+    st.subheader("Planner engine")
+    # The agent uses the live Claude loop only when an API key is present;
+    # otherwise it falls back to the deterministic scheduler.
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        st.badge("AI agent active", icon=":material/smart_toy:", color="green")
+        st.caption("Live Claude agent: plan → act → check → revise.")
+    else:
+        st.badge("Deterministic fallback", icon=":material/calculate:", color="orange")
+        st.caption("No API key set — safe baseline planner, no AI.")
+
+    st.subheader("Appearance")
+    # Quick presets set the picker; the picker allows any color at will; the
+    # reset control snaps back to the config.toml theme default.
+    st.pills(
+        "Accent presets",
+        list(ACCENT_PRESETS),
+        key="accent_preset",
+        on_change=_apply_accent_preset,
+        label_visibility="collapsed",
+    )
+    st.color_picker(
+        "Accent color",
+        key="accent_color",
+        help="Recolors buttons and links live. Pick any color you like.",
+    )
+    st.button(
+        "Reset to theme default",
+        icon=":material/restart_alt:",
+        on_click=_reset_accent,
+        type="tertiary",
     )
 
-recurring = st.checkbox("Recurring Task")
+# Apply the user-chosen accent color at runtime. The base theme comes from
+# .streamlit/config.toml; this small CSS override lets the user recolor the
+# primary accent (buttons, links) live from the sidebar.
+accent = st.session_state["accent_color"]
+st.html(
+    f"""
+    <style>
+    :root {{ --primary-color: {accent}; }}
+    .stButton button[kind="primary"],
+    .stFormSubmitButton button[kind="primary"],
+    button[data-testid="stBaseButton-primary"],
+    button[data-testid="stBaseButton-primaryFormSubmit"] {{
+        background-color: {accent};
+        border-color: {accent};
+    }}
+    [data-testid="stMarkdownContainer"] a {{ color: {accent}; }}
+    </style>
+    """
+)
 
-if st.button("Add Task"):
-    st.session_state.tasks.append(
-        {
-            "title": task_title,
-            "duration": int(duration),
-            "priority": priority,
-            "recurring": recurring,
-        }
-    )
-    st.success(f"Added '{task_title}'.")
+# ---------------------------------------------------------------------------
+# Main — task builder and daily schedule
+# ---------------------------------------------------------------------------
+st.title("Daily care planner")
+st.caption(f"Plan {pet_name or 'your pet'}'s day by priority within the available time.")
 
-if st.session_state.tasks:
-    st.subheader("Current Tasks")
+add_col, list_col = st.columns(2, gap="large")
 
-    header = st.columns([3, 2, 2, 2, 1])
-    header[0].markdown("**Task**")
-    header[1].markdown("**Duration**")
-    header[2].markdown("**Priority**")
-    header[3].markdown("**Recurring**")
-    header[4].markdown("**Remove**")
+# ---- Add a task ----
+with add_col:
+    with st.container(border=True):
+        st.subheader("Add a task")
+        with st.form("add_task", clear_on_submit=True, border=False):
+            title = st.text_input("Task title", value="Morning walk")
+            field1, field2 = st.columns(2)
+            duration = field1.number_input(
+                "Duration (minutes)", min_value=1, max_value=240, value=20, step=5
+            )
+            priority = field2.selectbox("Priority", ["high", "medium", "low"])
+            recurring = st.checkbox("Recurring task")
+            submitted = st.form_submit_button(
+                "Add task", icon=":material/add:", type="primary"
+            )
+        if submitted:
+            if title.strip():
+                st.session_state.tasks.append(
+                    {
+                        "title": title.strip(),
+                        "duration": int(duration),
+                        "priority": priority,
+                        "recurring": recurring,
+                    }
+                )
+                st.toast(f"Added “{title.strip()}”.", icon=":material/check:")
+            else:
+                st.warning("Give the task a title first.")
 
-    for i, item in enumerate(st.session_state.tasks):
-        row = st.columns([3, 2, 2, 2, 1])
-        row[0].write(item["title"])
-        row[1].write(f"{item['duration']} min")
-        row[2].write(item["priority"].title())
-        row[3].write("Yes" if item.get("recurring") else "No")
-        if row[4].button("🗑️", key=f"del_{i}", help=f"Remove '{item['title']}'"):
-            st.session_state.tasks.pop(i)
-            st.rerun()
+# ---- Current tasks ----
+with list_col:
+    with st.container(border=True):
+        st.subheader("Current tasks")
+        if not st.session_state.tasks:
+            st.caption("No tasks yet — add one on the left.")
+        else:
+            head = st.columns([4, 2, 3, 1], vertical_alignment="center")
+            head[0].markdown("**Task**")
+            head[1].markdown("**Duration**")
+            head[2].markdown("**Priority**")
+            head[3].markdown("**Remove**")
 
-    if st.button("Clear All Tasks"):
-        st.session_state.tasks = []
-        st.rerun()
-else:
-    st.info("No tasks added yet.")
+            for i, item in enumerate(st.session_state.tasks):
+                row = st.columns([4, 2, 3, 1], vertical_alignment="center")
+                row[0].write(item["title"])
+                if item.get("recurring"):
+                    row[0].caption(":material/repeat: Recurring")
+                row[1].write(f"{item['duration']} min")
+                color = PRIORITY_BADGE.get(item["priority"], "gray")
+                row[2].markdown(f":{color}-badge[{item['priority'].title()}]")
+                if row[3].button(
+                    "", icon=":material/delete:", key=f"del_{i}",
+                    help=f"Remove '{item['title']}'", type="tertiary",
+                ):
+                    st.session_state.tasks.pop(i)
+                    st.rerun()
 
-st.divider()
+            if st.button("Clear all", icon=":material/delete_sweep:", key="clear_all"):
+                st.session_state.tasks = []
+                st.rerun()
 
-# -------------------------
-# Generate Schedule
-# -------------------------
-st.header("Daily Schedule")
+# ---- Daily schedule ----
+st.subheader("Daily schedule")
 
-# The agent uses the live Claude loop only when an API key is present; otherwise
-# it falls back to the deterministic scheduler. Surface which path will run so
-# the UI is honest about what the user is seeing.
-if os.environ.get("ANTHROPIC_API_KEY"):
-    st.caption("🤖 AI Care Planner active (Claude agent).")
-else:
-    st.caption(
-        "⚠️ No `ANTHROPIC_API_KEY` set — using the deterministic fallback planner "
-        "(safe baseline, no AI)."
-    )
+generate = st.button(
+    "Generate schedule",
+    icon=":material/bolt:",
+    type="primary",
+    disabled=not st.session_state.tasks,
+)
+if not st.session_state.tasks:
+    st.caption("Add at least one task to generate a schedule.")
 
-if st.button("Generate Schedule"):
-
-    if not st.session_state.tasks:
-        st.warning("Add at least one task before generating a schedule.")
-        st.stop()
-
+if generate:
     # Map the UI task shape onto the keys the agent/guardrails expect.
     agent_tasks = [
         {
@@ -127,50 +207,64 @@ if st.button("Generate Schedule"):
         for item in st.session_state.tasks
     ]
 
-    # Guardrail: invalid input (bad duration/priority/etc.) is rejected before
-    # any AI call. Show the message instead of crashing the app.
+    # Guardrail: invalid input is rejected before any AI call.
     try:
         with st.spinner("Planning the day…"):
             result = plan_care(int(available_time), agent_tasks)
     except ValueError as exc:
-        st.error(f"Could not build a plan: {exc}")
+        st.error(f"Could not build a plan: {exc}", icon=":material/error:")
         st.stop()
 
     engine = f"Claude agent ({result.model})" if result.used_llm else "deterministic fallback"
-    st.success(f"Schedule generated by the {engine}.")
+    st.success(f"Schedule generated by the {engine}.", icon=":material/check_circle:")
 
-    # -------- Reliability signals: confidence + risk flags --------
-    conf_col, turns_col, time_col = st.columns(3)
-    conf_col.metric("Confidence", f"{result.confidence:.2f}")
-    turns_col.metric("Agent turns", result.iterations)
-    time_col.metric(
-        "Time Used",
-        f"{result.time_used} / {result.available_time} min",
+    # KPI cards
+    conf = result.confidence
+    conf_color = "green" if conf >= 0.8 else "orange" if conf >= 0.5 else "red"
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("Confidence", f"{conf:.2f}", border=True)
+    kpi2.metric("Agent turns", result.iterations, border=True)
+    kpi3.metric(
+        "Time used", f"{result.time_used} / {result.available_time} min", border=True
     )
+    st.markdown(f"Confidence rating: :{conf_color}-badge[{conf:.2f}]")
 
     if result.health_risk_flags:
-        st.error("**Health risk flags:**\n" + "\n".join(f"- {f}" for f in result.health_risk_flags))
+        st.error(
+            "**Health risk flags**\n\n"
+            + "\n".join(f"- {flag}" for flag in result.health_risk_flags),
+            icon=":material/warning:",
+        )
 
-    st.subheader("Scheduled Tasks")
-    if result.scheduled:
-        for title in result.scheduled:
-            st.markdown(f"✅ **{title}**")
-    else:
-        st.warning("No tasks could be scheduled.")
+    sched_col, skip_col = st.columns(2, gap="large")
+    with sched_col:
+        with st.container(border=True):
+            st.markdown("**Scheduled**")
+            if result.scheduled:
+                for title in result.scheduled:
+                    st.markdown(f":material/check_circle: {title}")
+            else:
+                st.caption("Nothing could be scheduled.")
+    with skip_col:
+        with st.container(border=True):
+            st.markdown("**Skipped**")
+            if result.skipped:
+                for title in result.skipped:
+                    st.markdown(f":material/cancel: {title}")
+            else:
+                st.caption("Nothing skipped — everything fit.")
 
-    if result.skipped:
-        st.subheader("Skipped Tasks")
-        for title in result.skipped:
-            st.markdown(f"❌ {title}")
+    with st.container(border=True):
+        st.markdown("**AI explanation**")
+        st.write(result.explanation)
 
-    st.subheader("AI Explanation")
-    st.write(result.explanation)
-
-    with st.expander("Why this confidence score?"):
+    with st.expander("Why this confidence score?", icon=":material/query_stats:"):
         for reason in result.confidence_reasons:
             st.markdown(f"- {reason}")
 
     if result.conflicts:
-        st.warning("Some tasks could not be scheduled due to limited available time.")
+        st.warning(
+            "Some tasks couldn't fit in the available time.", icon=":material/schedule:"
+        )
     else:
-        st.success("All tasks fit within the available time.")
+        st.success("All tasks fit within the available time.", icon=":material/task_alt:")

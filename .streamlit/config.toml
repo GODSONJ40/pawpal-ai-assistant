@@ -1,0 +1,71 @@
+# PawPal+ — warm, modern theme (native Streamlit theming, no custom CSS).
+# Coral/amber primary with peachy-cream + warm-brown neutrals: friendly and
+# pet-forward. Shared typography/shape live in [theme]; colors per mode so users
+# can toggle light/dark.
+
+[theme]
+font = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "'Inter':https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap"
+codeFont = "'JetBrains Mono':https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap"
+baseFontSize = 14
+codeFontSize = "13px"
+headingFontSizes = ["30px", "22px", "18px", "16px", "14px", "12px"]
+headingFontWeights = [700, 600, 600, 600, 500, 500]
+baseRadius = "12px"
+buttonRadius = "12px"
+showWidgetBorder = true
+showSidebarBorder = true
+linkUnderline = false
+chartCategoricalColors = ["#F97316", "#FB7185", "#F59E0B", "#10B981", "#8B5CF6", "#0EA5E9", "#857567", "#E11D48"]
+
+[theme.light]
+primaryColor = "#E2542A"
+backgroundColor = "#FFF8F1"
+secondaryBackgroundColor = "#FBEEE1"
+textColor = "#1F160F"
+linkColor = "#E2542A"
+borderColor = "#EEDCC9"
+codeBackgroundColor = "#FBEEE1"
+codeTextColor = "#1F160F"
+greenColor = "#10B981"
+redColor = "#E11D48"
+yellowColor = "#EAB308"
+orangeColor = "#E2542A"
+blueColor = "#3B82F6"
+violetColor = "#8B5CF6"
+grayColor = "#857567"
+dataframeHeaderBackgroundColor = "#FBEEE1"
+dataframeBorderColor = "#EEDCC9"
+
+[theme.light.sidebar]
+backgroundColor = "#FBEEE1"
+secondaryBackgroundColor = "#F6E2D0"
+textColor = "#1F160F"
+borderColor = "#EEDCC9"
+primaryColor = "#E2542A"
+
+[theme.dark]
+primaryColor = "#FB7C42"
+backgroundColor = "#120A06"
+secondaryBackgroundColor = "#241610"
+textColor = "#FBF3EA"
+linkColor = "#FB923C"
+borderColor = "#3A281C"
+codeBackgroundColor = "#241610"
+codeTextColor = "#EADFD4"
+greenColor = "#34D399"
+redColor = "#FB7185"
+yellowColor = "#FACC15"
+orangeColor = "#FB923C"
+blueColor = "#60A5FA"
+violetColor = "#A78BFA"
+grayColor = "#B0A296"
+dataframeHeaderBackgroundColor = "#241610"
+dataframeBorderColor = "#3A281C"
+
+[theme.dark.sidebar]
+backgroundColor = "#0D0704"
+secondaryBackgroundColor = "#241610"
+textColor = "#FBF3EA"
+borderColor = "#3A281C"
+primaryColor = "#FB923C"
