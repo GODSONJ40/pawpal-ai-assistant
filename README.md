@@ -198,10 +198,10 @@ the offline deterministic fallback, and the agent loop (act → submit) plus the
 refusal fallback — all mocked so they run with no API key. The scheduler suite
 covers sorting, time-budget filtering, and conflict detection.
 
-## 📐 Smarter Scheduling
+## 📐 Scheduling Core (source of truth)
 
-> Fill in once you've implemented scheduling logic.
-
+The agent never invents a schedule — it calls this verified logic from
+`pawpal_system.py` as a tool and grounds every plan in the result:
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
@@ -210,18 +210,28 @@ covers sorting, time-budget filtering, and conflict detection.
 | Conflict handling | `detect_conflicts()` | Checks if total task time exceeds available time |
 | Recurring tasks | `Task.recurring` | Flag included for future expansion |
 
-
 ## 📸 Demo Walkthrough
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+To see the full agentic system end-to-end in the Streamlit UI:
 
-1. Open the PawPal+ Streamlit app using `py -m streamlit run app.py`
-2. Enter owner name, pet name, and species
-3. Set available daily time in minutes
-4. Add multiple pet care tasks with priority and duration
-5. Click “Generate Schedule”
-6. View optimized daily plan
-7. Review skipped tasks and explanation of scheduling logic
+1. Launch the app: `streamlit run app.py` (or `py -m streamlit run app.py`).
+2. Enter owner name, pet name, and species.
+3. Set available daily time in minutes.
+4. Add pet-care tasks with a priority and duration (include a `Medication` or
+   `Vet` task to trigger the health-safety guardrail).
+5. Click **Generate Schedule**. A banner shows whether the live Claude agent or
+   the deterministic fallback is running.
+6. Review the plan: **Confidence** score, **Agent turns**, **Time Used**, any
+   **health risk flags**, the AI **explanation**, and a "Why this confidence
+   score?" breakdown.
+7. See the reproducible CLI evidence above (`python demo.py --no-llm`) for the
+   same behavior without the UI.
 
-**Screenshot or video** *(optional)*: <!-- ![alt text](image.png) -->
-![alt text](image-1.png)
+**Screenshot** *(optional)*: <!-- ![PawPal+ Streamlit UI](image-1.png) -->
+![PawPal+ Streamlit UI](image-1.png)
+
+## 🧠 Responsible-AI Reflection
+
+The graded reflection — AI collaboration (one helpful and one flawed suggestion),
+limitations and biases, misuse prevention, and reliability-testing surprises —
+lives in [`model_card.md`](model_card.md).
