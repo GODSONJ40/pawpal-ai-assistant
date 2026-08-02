@@ -227,8 +227,16 @@ To see the full agentic system end-to-end in the Streamlit UI:
 7. See the reproducible CLI evidence above (`python demo.py --no-llm`) for the
    same behavior without the UI.
 
-**Screenshot** *(optional)*: <!-- ![PawPal+ Streamlit UI](image-1.png) -->
-![PawPal+ Streamlit UI](image-1.png)
+**Screenshots:**
+
+*Result view — the over-booked scenario: confidence crashes to 0.17, a health
+risk flag fires for the skipped Vet Appointment, and the plan is explained.*
+
+![PawPal+ result view with confidence score and health risk flag](assets/image-1.png)
+
+*Input view — owner/pet details and the task builder.*
+
+![PawPal+ input and task-builder view](assets/image-2.png)
 
 ## 🧠 Responsible-AI Reflection
 
