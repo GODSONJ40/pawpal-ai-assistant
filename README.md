@@ -1,26 +1,55 @@
-# PawPal+ (Module 2 Project)
+# PawPal+ — Agentic Pet-Care Planner
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+An applied-AI system that turns a pet owner's daily tasks and available time into
+a **safe, prioritized care plan**. An LLM agent reasons about the day, but every
+decision is grounded in deterministic scheduling logic — so the plan is both
+intelligent *and* verifiable, with confidence scoring and health-safety guardrails.
 
-## Scenario
+## Base Project (Modules 1–3)
 
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
+This project extends **PawPal+**, my Module 2 mini-project: a Streamlit app with an
+object-oriented core (`Owner`, `Pet`, `Task`, `Scheduler`) that sorted pet-care
+tasks by priority and duration and packed them into the owner's available time,
+detecting conflicts when everything wouldn't fit. That prototype was purely
+deterministic — it scheduled tasks but could not *reason* about trade-offs or flag
+when a skipped task was dangerous.
 
-- Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-- Consider constraints (time available, priority, owner preferences)
-- Produce a daily plan and explain why it chose that plan
+## What's New in the Final Version
 
-Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
+The final system adds an **agentic AI workflow** (the required AI feature) on top of
+that verified core:
 
-## What you will build
+- **Agentic loop** (`pawpal_agent.py`) — the Claude-powered `CarePlannerAgent`
+  runs **plan → act → check → revise → submit**, calling the original `Scheduler`
+  as a tool so its plans are always grounded in real logic (not hallucinated).
+- **Reliability & guardrails** — input validation before any AI call, a
+  **confidence score (0.0–1.0)** with reasons, **health-critical risk flags**
+  (e.g. a skipped medication), a safety-refusal handler, and a **deterministic
+  fallback** so the app works even with no API key.
+- **Logging & traces** — events to `logs/pawpal_agent.log`; agent reasoning traces
+  to `ai_interactions.md`.
+- **Full integration** — both the Streamlit UI (`app.py`) and the CLI demo
+  (`demo.py`) run through the same `plan_care()` entry point.
 
-Your final app should:
+## Architecture Overview
 
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
+Data flows **input → guardrails → agentic loop (grounded in the Scheduler) →
+confidence scoring → output**, with logging and tests observing the results:
+
+```
+Owner tasks + time
+   → validate_inputs()            (guardrail: reject bad input)
+   → API-key check                (live Claude agent, or deterministic fallback)
+   → CarePlannerAgent.plan()      (plan → act → check → revise → submit)
+        └─ build_care_schedule → Scheduler.build_schedule()   (source of truth)
+   → compute_confidence() + risk flags
+   → CarePlanResult               (shown in Streamlit UI / printed by CLI)
+```
+
+The full system diagram (required Mermaid source) lives at
+[`diagrams/architecture.mmd`](diagrams/architecture.mmd) — preview it at
+<https://mermaid.live>. Responsible-AI reflection is in
+[`model_card.md`](model_card.md).
 
 ## Getting started
 
@@ -32,15 +61,29 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Suggested workflow
+**Optional — enable the live Claude agent.** The system runs fully offline using
+its deterministic fallback, so no key is required to run or grade it. To exercise
+the live agentic loop, set your Anthropic API key:
 
-1. Read the scenario carefully and identify requirements and edge cases.
-2. Draft a UML diagram (classes, attributes, methods, relationships).
-3. Convert UML into Python class stubs (no logic yet).
-4. Implement scheduling logic in small increments.
-5. Add tests to verify key behaviors.
-6. Connect your logic to the Streamlit UI in `app.py`.
-7. Refine UML so it matches what you actually built.
+```bash
+export ANTHROPIC_API_KEY=sk-...   # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-..."
+```
+
+### Running
+
+```bash
+# CLI demo — reproducible evidence across 3 scenarios (offline)
+python demo.py --no-llm
+
+# CLI demo — live Claude agent (requires ANTHROPIC_API_KEY)
+python demo.py
+
+# Streamlit UI
+streamlit run app.py      # or: py -m streamlit run app.py
+
+# Tests
+pytest
+```
 
 ## 🖥️ Reproducible Execution Evidence
 

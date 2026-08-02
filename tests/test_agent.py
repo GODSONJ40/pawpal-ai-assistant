@@ -32,6 +32,15 @@ TASKS = [
 ]
 
 
+@pytest.fixture(autouse=True)
+def _isolate_trace_file(monkeypatch, tmp_path):
+    """Redirect the agent's interaction-trace file to a temp path so running the
+    suite never mutates the tracked ai_interactions.md."""
+    monkeypatch.setattr(
+        "pawpal_agent.INTERACTIONS_FILE", tmp_path / "ai_interactions.md"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Guardrails: validate_inputs
 # ---------------------------------------------------------------------------
